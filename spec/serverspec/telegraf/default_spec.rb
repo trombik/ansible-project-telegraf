@@ -6,4 +6,7 @@ require "net/http"
 context "after provision finishes" do
   it_behaves_like "a host with a valid hostname"
   it_behaves_like "a host with all basic tools installed"
+  describe service "telegraf" do
+    it { should be_running }
+  end
 end
