@@ -1,5 +1,5 @@
 ---
-- hosts: foo
+- hosts: telegraf
   become: yes
   become_method: sudo
   environment:
