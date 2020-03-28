@@ -10,23 +10,23 @@ require "uri"
 # @return [String] public IP address of workstation used for egress traffic
 def local_ip
   @local_ip ||= begin
-                  # turn off reverse DNS resolution temporarily
-                  orig = Socket.do_not_reverse_lookup
-                  Socket.do_not_reverse_lookup = true
+    # turn off reverse DNS resolution temporarily
+    orig = Socket.do_not_reverse_lookup
+    Socket.do_not_reverse_lookup = true
 
-                  # open UDP socket so that it never send anything over the network
-                  UDPSocket.open do |s|
-                    s.connect "8.8.8.8", 1 # any global IP address works here
-                    s.addr.last
-                  end
-                ensure
-                  Socket.do_not_reverse_lookup = orig
-                end
+    # open UDP socket so that it never send anything over the network
+    UDPSocket.open do |s|
+      s.connect "8.8.8.8", 1 # any global IP address works here
+      s.addr.last
+    end
+  ensure
+    Socket.do_not_reverse_lookup = orig
+  end
 end
 
 # @return [Integer] default listening port
 def local_port
-  ENV.key?("VAGRANT_HTTP_PROXY_PORT") ? ENV["VAGRANT_HTTP_PROXY_PORT"] : 8080
+  ENV["VAGRANT_HTTP_PROXY_PORT"] ? ENV["VAGRANT_HTTP_PROXY_PORT"] : 8080
 end
 
 # @return [String] the proxy URL
@@ -44,7 +44,7 @@ rescue SocketError, Errno::ECONNREFUSED,
 rescue Errno::EPERM, Errno::ETIMEDOUT
   false
 ensure
-  socket&.close
+  socket && socket.close
 end
 # XXX proxy handling should be roled into a library and the lines above should
 # be removed from the file
@@ -65,7 +65,6 @@ inventory_file = inventory_directory + "#{environment}.yml"
 inventory = YAML.load_file(inventory_file)
 playbooks_directory = project_root_directory + "playbooks"
 raise "`#{project_config}` does not have mandatory key `name`" unless project.key?("name")
-
 # group_name = project["name"]
 
 Vagrant.configure("2") do |config|
@@ -78,7 +77,7 @@ Vagrant.configure("2") do |config|
       v.cpus = 1
     end
     config.vm.box_check_update = false
-    default_box = "trombik/ansible-ubuntu-18.04-amd64"
+    default_box = "trombik/ansible-freebsd-12.1-amd64"
     hostname_by_priority = inventory["all"]["hosts"].keys.sort do |a, b|
       inventory["all"]["hosts"][b]["vagrant_priority"] <=> inventory["all"]["hosts"][a]["vagrant_priority"]
     end
@@ -120,6 +119,7 @@ Vagrant.configure("2") do |config|
                         else
                           "/usr/bin/python"
                         end
+          python_path = inventory["all"]["hosts"][hostname]["ansible_python_interpreter"] if inventory["all"]["hosts"][hostname].key?("ansible_python_interpreter")
           ansible_extra_vars_staging = {
             ansible_python_interpreter: python_path,
             ansible_user: "vagrant",
