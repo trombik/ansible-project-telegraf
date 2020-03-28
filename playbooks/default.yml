@@ -16,4 +16,5 @@
     - role: trombik.tmux
     - role: trombik.vim
     - role: trombik.zsh
+    - role: trombik.telegraf
   vars:

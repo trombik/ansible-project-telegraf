@@ -1,0 +1,67 @@
+---
+telegraf_extra_packages:
+  net-mgmt/net-snmp
+telegraf_flags: |
+  telegraf_flags=""
+telegraf_config: |
+  [global_tags]
+  [agent]
+    interval = "10s"
+    round_interval = true
+    metric_batch_size = 1000
+    metric_buffer_limit = 10000
+    collection_jitter = "0s"
+    flush_interval = "10s"
+    flush_jitter = "0s"
+    precision = ""
+    debug = true
+    quiet = false
+    logfile = "{{ telegraf_log_dir }}/telegraf.log"
+    hostname = "{{ ansible_fqdn }}"
+    omit_hostname = false
+    logfile_rotation_interval = "1d"
+    logfile_rotation_max_archives = 5
+
+  [[outputs.file]]
+    files = ["{{ telegraf_log_dir }}/metrics.out"]
+    data_format = "influx"
+
+  [[inputs.cpu]]
+    percpu = true
+    totalcpu = true
+    collect_cpu_time = false
+    report_active = false
+  [[inputs.disk]]
+    ignore_fs = ["tmpfs", "devtmpfs", "devfs", "overlay", "aufs", "squashfs"]
+  [[inputs.diskio]]
+  [[inputs.kernel]]
+  [[inputs.mem]]
+  [[inputs.processes]]
+  # broken at the moment. https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=240570
+  # [[inputs.swap]]
+  #
+  {% if ansible_os_family != "OpenBSD" %}
+  # does not work on OpenBSD
+  [[inputs.system]]
+  {% endif %}
+  [[inputs.snmp]]
+    agents = ["openwrt.i.trombik.org"]
+    timeout = "10s"
+    version = 2
+    community = "public"
+    retries = 3
+  [[inputs.snmp.field]]
+    oid = "RFC1213-MIB::sysUpTime.0"
+    name = "uptime"
+  [[inputs.snmp.field]]
+    oid = "RFC1213-MIB::sysName.0"
+    name = "source"
+    is_tag = true
+  [[inputs.snmp.table]]
+    oid = "IF-MIB::ifTable"
+    name = "interface"
+    inherit_tags = ["source"]
+    [[inputs.snmp.table.field]]
+    oid = "IF-MIB::ifDescr"
+    name = "ifDescr"
+    is_tag = true
