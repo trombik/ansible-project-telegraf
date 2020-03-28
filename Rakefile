@@ -19,7 +19,6 @@ def exec_and_abort_if_fail(cmd)
   status = system cmd
   warn "`#{cmd}` failed." unless $CHILD_STATUS.exitstatus.zero?
   abort unless $CHILD_STATUS.exitstatus.zero?
-
   status
 end
 
@@ -31,7 +30,7 @@ end
 
 def ansible_environment
   known_environment = %w[virtualbox staging prod]
-  env = ENV.key?("ANSIBLE_ENVIRONMENT") ? ENV["ANSIBLE_ENVIRONMENT"] : "virtualbox"
+  env = ENV["ANSIBLE_ENVIRONMENT"] || "virtualbox"
   raise "unknown environment `#{env}`" unless known_environment.include?(env)
 
   env
@@ -60,24 +59,20 @@ def plan_path
 end
 
 def run_as_user
-  @user ||= get_run_as_user
+  @run_as_user ||= _run_as_user
 end
 
-def get_run_as_user
-  user = nil
-  if ENV["ANSIBLE_USER"]
-    user = ENV["ANSIBLE_USER"]
-  else
-    case ansible_environment
-    when "virtualbox"
-      user = "vagrant"
-    when "staging"
-      user = "ec2-user"
-    when "prod"
-      user = ENV["USER"]
-    end
+def _run_as_user
+  return ENV["ANSIBLE_USER"] if ENV["ANSIBLE_USER"]
+
+  case ansible_environment
+  when "virtualbox"
+    "vagrant"
+  when "staging"
+    "ec2-user"
+  when "prod"
+    ENV["USER"]
   end
-  user
 end
 
 desc "launch VMs"
@@ -99,7 +94,7 @@ task :up do
       sh "ansible -i #{inventory_path} --ssh-common-args '-o \"UserKnownHostsFile /dev/null\" -o \"StrictHostKeyChecking no\"' --user #{run_as_user} -m ping all"
     end
   when "prod"
-    # XXX NOOP
+    sh "ansible -i #{inventory_path} -m ping all"
   end
 end
 
@@ -110,8 +105,6 @@ task :status do
     vagrant "status"
   when "staging"
     sh "terraform show"
-  when "prod"
-    # XXX NOOP
   end
 end
 
@@ -122,8 +115,6 @@ task :clean do
     vagrant "destroy -f"
   when "staging"
     sh "terraform destroy -force #{plan_path}"
-  when "prod"
-    # XXX NOOP
   end
 end
 
@@ -133,7 +124,9 @@ task :provision do
   when "virtualbox"
     vagrant "provision"
   when "staging"
+    # rubocop:disable Layout/LineLength
     sh "ansible-playbook -i #{inventory_path} --ssh-common-args '-o \"UserKnownHostsFile /dev/null\" -o \"StrictHostKeyChecking no\"' --user #{run_as_user} playbooks/site.yml"
+    # rubocop:enable Layout/LineLength
   when "prod"
     sh "ansible-playbook -i #{inventory_path} --user #{run_as_user} --ask-become-pass playbooks/site.yml"
   end
@@ -145,7 +138,9 @@ task :dryrun do
   when "virtualbox"
     raise "dryrun is not implemented for `#{ansible_environment}`"
   when "staging"
+    # rubocop:disable Layout/LineLength
     sh "ansible-playbook -CD -i #{inventory_path} --ssh-common-args '-o \"UserKnownHostsFile /dev/null\" -o \"StrictHostKeyChecking no\"' --user #{run_as_user} playbooks/site.yml"
+    # rubocop:enable Layout/LineLength
   when "prod"
     sh "ansible-playbook -CD -i #{inventory_path} --user #{run_as_user} --ask-become-pass playbooks/site.yml"
   end
