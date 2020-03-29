@@ -4,13 +4,20 @@ all:
     collector.i.trombik.org:
       vagrant_priority: 11
       ansible_host: 172.16.100.200
+    influx.i.trombik.org:
+      vagrant_priority: 20
+      ansible_host: 172.16.100.201
   children:
     telegraf:
       hosts:
         collector.i.trombik.org:
+    influx:
+      hosts:
+        influx.i.trombik.org:
     virtualbox:
       children:
         telegraf:
+        influx:
     virtualbox_credentials:
       children:
         virtualbox:

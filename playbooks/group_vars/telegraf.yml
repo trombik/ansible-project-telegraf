@@ -14,6 +14,7 @@ telegraf_config: |
     flush_interval = "10s"
     flush_jitter = "0s"
     precision = ""
+    # XXX remove after debugging
     debug = true
     quiet = false
     logfile = "{{ telegraf_log_dir }}/telegraf.log"
@@ -23,8 +24,16 @@ telegraf_config: |
     logfile_rotation_max_archives = 5
 
   [[outputs.file]]
+    # XXX remove after debugging
     files = ["{{ telegraf_log_dir }}/metrics.out"]
     data_format = "influx"
+  [[outputs.influxdb]]
+    urls = ["{{ project_influx_urls | join('", "') }}"]
+    database = "{{ project_influx_database }}"
+    skip_database_creation = true
+    timeout = "5s"
+    username = "{{ project_influx_user }}"
+    password = "{{ project_influx_password }}"
 
   [[inputs.cpu]]
     percpu = true
@@ -48,7 +57,7 @@ telegraf_config: |
     agents = ["openwrt.i.trombik.org"]
     timeout = "10s"
     version = 2
-    community = "public"
+    community = "{{ project_snmp_community }}"
     retries = 3
   [[inputs.snmp.field]]
     oid = "RFC1213-MIB::sysUpTime.0"

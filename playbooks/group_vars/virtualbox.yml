@@ -8,3 +8,6 @@ hostname_fqdn: "{% if ansible_os_family == 'Debian' %}{{ inventory_hostname.spli
 hosts_enable_localhost: yes
 hosts_extra_localhosts:
   - "{{ inventory_hostname }}"
+project_influx_urls:
+  - http://172.16.100.201:8086
+project_influx_database: mydatabase
