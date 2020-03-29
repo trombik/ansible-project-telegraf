@@ -1,3 +1,4 @@
 ---
 
 - import_playbook: default.yml
+- import_playbook: influx.yml
