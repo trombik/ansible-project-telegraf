@@ -16,3 +16,6 @@
   src: https://github.com/trombik/ansible-role-telegraf.git
   version: master
 - name: trombik.influxdb
+  version: 1.2.0
+- name: trombik.grafana
+  version: 1.1.1
