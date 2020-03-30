@@ -7,24 +7,24 @@ influxdb_users:
   - user_name: foo
     user_password: PassWord
     grants:
-      - database: mydatabase
+      - database: "{{ project_influx_database }}"
         privilege: ALL
-  - user_name: write_only
-    user_password: write_only
+  - user_name: "{{ project_influx_user }}"
+    user_password: "{{ project_influx_password }}"
     grants:
-      - database: mydatabase
+      - database: "{{ project_influx_database }}"
         privilege: WRITE
   - user_name: read_only
     user_password: read_only
     grants:
-      - database: mydatabase
+      - database: "{{ project_influx_database }}"
         privilege: READ
   - user_name: none
     user_password: none
   - user_name: bar
     state: absent
 influxdb_databases:
-  - database_name: mydatabase
+  - database_name: "{{ project_influx_database }}"
     state: present
 
 influxdb_config: |
@@ -52,3 +52,90 @@ influxdb_config: |
   [[opentsdb]]
   [[udp]]
   [tls]
+os_garafana_flags:
+  FreeBSD: |
+    grafana_conf={{ grafana_conf_file }}
+grafana_flags: "{{ os_garafana_flags[ansible_os_family] }}"
+grafana_admin_user: admin
+grafana_admin_password: PassWord
+grafana_addr: 172.16.100.201
+grafana_provisioning_files:
+  - name: datasources/influxdb.yml
+    state: present
+    format: yaml
+    content:
+      apiVersion: 1
+      datasources:
+        - name: InfluxDB
+          type: influxdb
+          access: proxy
+          database: "{{ project_influx_database }}"
+          user: read_only
+          password: read_only
+          url: http://172.16.100.201:8086
+          jsonData:
+            httpMode: GET
+  - name: provisioning/dashboards/default.yml
+    state: present
+    # raw text
+    content: |
+      # Managed by ansible
+      apiVersion: 1
+      providers:
+        - name: a unique provider name
+          orgId: 1
+          folder: Test folder
+          type: file
+          disableDeletion: false
+          editable: true
+          updateIntervalSeconds: 10
+          options:
+            path: {{ grafana_provisioning_dir }}/dashboards/json
+  - name: provisioning/dashboards/json/empty.js
+    content: |
+      {}
+grafana_config: |
+  [paths]
+  data = {{ grafana_db_dir }}
+  logs = {{ grafana_log_dir }}
+  plugins = /var/db/grafana/plugins
+  provisioning = {{ grafana_provisioning_dir }}
+  [server]
+  [database]
+  log_queries =
+  [session]
+  [dataproxy]
+  [analytics]
+  [security]
+  admin_user = {{ grafana_admin_user }}
+  admin_password = {{ grafana_admin_password }}
+  disable_gravatar = true
+  [snapshots]
+  [dashboards]
+  [users]
+  [auth]
+  [auth.anonymous]
+  [auth.github]
+  [auth.google]
+  [auth.generic_oauth]
+  [auth.grafana_com]
+  [auth.proxy]
+  [auth.basic]
+  [auth.ldap]
+  [smtp]
+  [emails]
+  [log]
+  [log.console]
+  [log.file]
+  [log.syslog]
+  [alerting]
+  [metrics]
+  [metrics.graphite]
+  [tracing.jaeger]
+  [grafana_com]
+  [external_image_storage]
+  [external_image_storage.s3]
+  [external_image_storage.webdav]
+  [external_image_storage.gcs]
+  [external_image_storage.azure_blob]
+  [external_image_storage.local]

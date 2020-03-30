@@ -17,4 +17,5 @@
     - role: trombik.vim
     - role: trombik.zsh
     - role: trombik.influxdb
+    - role: trombik.grafana
   vars:

@@ -11,3 +11,27 @@ hosts_extra_localhosts:
 project_influx_urls:
   - http://172.16.100.201:8086
 project_influx_database: mydatabase
+
+project_telegraf_inputs:
+  dns_query:
+    - servers:
+        - 8.8.8.8
+        - 8.8.4.4
+      domains:
+        - "."
+      record_type: NS
+    - servers:
+        - a.dns.jp
+        - b.dns.jp
+        - c.dns.jp
+        - d.dns.jp
+
+      domains:
+        - jp
+        - co.jp
+      record_type: NS
+
+  x509_cert:
+    sources:
+      - https://google.com:443
+      - https://facebook.com:443

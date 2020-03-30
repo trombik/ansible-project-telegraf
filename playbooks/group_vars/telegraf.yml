@@ -53,6 +53,7 @@ telegraf_config: |
   # does not work on OpenBSD
   [[inputs.system]]
   {% endif %}
+  # _________________________________________________________snmp
   [[inputs.snmp]]
     agents = ["openwrt.i.trombik.org"]
     timeout = "10s"
@@ -74,3 +75,17 @@ telegraf_config: |
     oid = "IF-MIB::ifDescr"
     name = "ifDescr"
     is_tag = true
+  # _________________________________________________________dns_query
+  {% for config in project_telegraf_inputs['dns_query'] %}
+  [[inputs.dns_query]]
+    servers = ["{{ config['servers'] | join('", "') }}"]
+    network = "{{ config['network'] | default('udp') }}"
+    domains = ["{{ config['domains'] | join('", "') }}"]
+    record_type = "{{ config['record_type'] | default('A') }}"
+    port = {{ config['port'] | default('53') }}
+    timeout = {{ config['timeout'] | default('2') }}
+  {% endfor %}
+  # _________________________________________________________x509_cert
+  [[inputs.x509_cert]]
+    sources = ["{{ project_telegraf_inputs['x509_cert']['sources'] | join('", "') }}"]
+    timeout = "{{ project_telegraf_inputs['x509_cert']['timeout'] | default('5s') }}"
