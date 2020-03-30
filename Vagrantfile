@@ -19,14 +19,14 @@ def local_ip
       s.connect "8.8.8.8", 1 # any global IP address works here
       s.addr.last
     end
-  ensure
-    Socket.do_not_reverse_lookup = orig
+                ensure
+                  Socket.do_not_reverse_lookup = orig
   end
 end
 
 # @return [Integer] default listening port
 def local_port
-  ENV["VAGRANT_HTTP_PROXY_PORT"] ? ENV["VAGRANT_HTTP_PROXY_PORT"] : 8080
+  ENV["VAGRANT_HTTP_PROXY_PORT"] || 8080
 end
 
 # @return [String] the proxy URL
@@ -44,7 +44,7 @@ rescue SocketError, Errno::ECONNREFUSED,
 rescue Errno::EPERM, Errno::ETIMEDOUT
   false
 ensure
-  socket && socket.close
+  socket&.close
 end
 # XXX proxy handling should be roled into a library and the lines above should
 # be removed from the file
@@ -64,7 +64,10 @@ inventory_directory = inventory_root_directory + environment
 inventory_file = inventory_directory + "#{environment}.yml"
 inventory = YAML.load_file(inventory_file)
 playbooks_directory = project_root_directory + "playbooks"
-raise "`#{project_config}` does not have mandatory key `name`" unless project.key?("name")
+unless project.key?("name")
+  raise "`#{project_config}` does not have mandatory key `name`"
+end
+
 # group_name = project["name"]
 
 Vagrant.configure("2") do |config|
@@ -104,7 +107,9 @@ Vagrant.configure("2") do |config|
         end
         if inventory["all"]["hosts"][hostname].key?("vagrant_extra_networks")
           inventory["all"]["hosts"][hostname]["vagrant_extra_networks"].each do |n|
-            raise "#{hostname} does not have ipv4 as a key under vagrant_extra_networks" unless n.key?("ipv4")
+            unless n.key?("ipv4")
+              raise "#{hostname} does not have ipv4 as a key under vagrant_extra_networks"
+            end
 
             c.vm.network "private_network", ip: n["ipv4"] if n.key?("ipv4")
           end
@@ -119,7 +124,9 @@ Vagrant.configure("2") do |config|
                         else
                           "/usr/bin/python"
                         end
-          python_path = inventory["all"]["hosts"][hostname]["ansible_python_interpreter"] if inventory["all"]["hosts"][hostname].key?("ansible_python_interpreter")
+          if inventory["all"]["hosts"][hostname].key?("ansible_python_interpreter")
+            python_path = inventory["all"]["hosts"][hostname]["ansible_python_interpreter"]
+          end
           ansible_extra_vars_staging = {
             ansible_python_interpreter: python_path,
             ansible_user: "vagrant",
